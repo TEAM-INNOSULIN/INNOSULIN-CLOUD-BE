@@ -3,6 +3,9 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const dotenv = require('dotenv');
+var mongoose = require('mongoose');
+dotenv.config();
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -19,6 +22,19 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Connect MongoDB with mongoose
+const uri = 'mongodb+srv://' +
+  process.env.MONGO_USERNAME + ':' +
+  process.env.MONGO_PASSWORD + '@' +
+  process.env.MONGO_HOST + '/' +
+  'test?retryWrites=true&w=majority';
+
+mongoose.connect(uri, {
+  serverSelectionTimeoutMS: 5000
+}).catch(err => console.log(err.reason))
+  .then(console.log("[Express Server] MongoDB Connected"));
+
+// Set Router
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
