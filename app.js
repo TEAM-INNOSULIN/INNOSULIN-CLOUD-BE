@@ -34,9 +34,11 @@ mongoose.connect(uri, {
 // Set Router
 var indexRouter = require('./routes/index');
 var fitbitRouter = require('./routes/fitbit');
+var userRouter = require('./routes/user');
 
 app.use('/', indexRouter);
-app.use('/fitbit/', fitbitRouter);
+app.use('/fitbit', fitbitRouter);
+app.use('/user', userRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

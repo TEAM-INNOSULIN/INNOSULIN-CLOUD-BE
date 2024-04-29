@@ -4,10 +4,11 @@ var router = express.Router();
 
 router.get('/fetchProfile', async (req, res) => {
 	const apiEndPoint = 'https://api.fitbit.com/1/user/-/profile.json';
+	accessToken = req.body.accessToken;
 	try {
 		const response = await fetch(apiEndPoint, {
 			headers: {
-				Authorization: `Bearer ${process.env.FITBIT_ACCESS}`,
+				Authorization: `Bearer ${accessToken}`,
 			},
 		});
 
@@ -33,17 +34,18 @@ router.get('/fetchActivity', async (req, res) => {
 	const day = String(today.getDate()).padStart(2, '0');
 	const formattedDate = `${year}-${month}-${day}`;
 
+	accessToken = req.body.accessToken;
 	const apiEndPoint = `https://api.fitbit.com/1/user/-/activities/date/${formattedDate}.json`;
 	try {
 		const response = await fetch(apiEndPoint, {
 			headers: {
-				Authorization: `Bearer ${process.env.FITBIT_ACCESS}`,
+				Authorization: `Bearer ${accessToken}`,
 			},
 		});
 
 		if (response.ok) {
 			const data = await response.json();
-			console.log("[Fitbit]-[steps] ", data['summary']['steps']);
+			console.log(`[Fitbit]-[${today}]-[steps]`, data['summary']['steps']);
 			return res.status(200).json(data);
 		} else {
 			return res.status(400).json('Fitbit API Request Failed');
