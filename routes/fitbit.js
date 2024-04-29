@@ -1,31 +1,57 @@
 var express = require('express');
+const fetch = require('node-fetch');
 var router = express.Router();
-const FitbitApiClient = require("fitbit-node");
 
-const client = new FitbitApiClient({
-	clientId: process.env.FITBIT_CLIENT_ID,
-	clientSecret: process.env.FITBIT_CLIENT_SECRET,
-	apiVersion: '1.2' // 1.2 is the default
-});
-
-// redirect the user to the Fitbit authorization page
-router.get('/authorize', (req, res) => {
-    res.redirect(client.getAuthorizeUrl('activity heartrate location nutrition profile settings sleep social weight', 'http://localhost:3000'));
-});
-
-// handle the callback from the Fitbit authorization flow
-router.get("/callback", (req, res) => {
-	// exchange the authorization code we just received for an access token
-	client.getAccessToken(req.query.code, 'http://localhost/callback').then(result => {
-		// use the access token to fetch the user's profile information
-		client.get("/profile.json", result.access_token).then(results => {
-			res.send(results[0]);
-		}).catch(err => {
-			res.status(err.status).send(err);
+router.get('/fetchProfile', async (req, res) => {
+	const apiEndPoint = 'https://api.fitbit.com/1/user/-/profile.json';
+	try {
+		const response = await fetch(apiEndPoint, {
+			headers: {
+				Authorization: `Bearer ${process.env.FITBIT_ACCESS}`,
+			},
 		});
-	}).catch(err => {
-		res.status(err.status).send(err);
-	});
+
+		if (response.ok) {
+			const data = await response.json();
+			// console.log("[Fitbit] ", data);
+			return res.status(200).json(data);
+		} else {
+			return res.status(400).json('Fitbit API Request Failed');
+		}
+	} catch (error) {
+		console.error('[Fitbit] ', error);
+		next(error);
+	}
+});
+
+// 하루의 Activity를 요약한 정보 전송
+router.get('/fetchActivity', async (req, res) => {
+	// Formatted Date로 오늘에 대한 요청 전송
+	const today = new Date();
+	const year = today.getFullYear();
+	const month = String(today.getMonth() + 1).padStart(2, '0');
+	const day = String(today.getDate()).padStart(2, '0');
+	const formattedDate = `${year}-${month}-${day}`;
+
+	const apiEndPoint = `https://api.fitbit.com/1/user/-/activities/date/${formattedDate}.json`;
+	try {
+		const response = await fetch(apiEndPoint, {
+			headers: {
+				Authorization: `Bearer ${process.env.FITBIT_ACCESS}`,
+			},
+		});
+
+		if (response.ok) {
+			const data = await response.json();
+			console.log("[Fitbit]-[steps] ", data['summary']['steps']);
+			return res.status(200).json(data);
+		} else {
+			return res.status(400).json('Fitbit API Request Failed');
+		}
+	} catch (error) {
+		console.error('[Fitbit] ', error);
+		next(error);
+	}
 });
 
 module.exports = router;
