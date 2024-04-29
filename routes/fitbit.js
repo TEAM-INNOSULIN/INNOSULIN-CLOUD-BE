@@ -10,13 +10,13 @@ const client = new FitbitApiClient({
 
 // redirect the user to the Fitbit authorization page
 router.get('/authorize', (req, res) => {
-    res.redirect(client.getAuthorizeUrl('activity heartrate location nutrition profile settings sleep social weight', 'localhost:3000'));
+    res.redirect(client.getAuthorizeUrl('activity heartrate location nutrition profile settings sleep social weight', 'http://localhost:3000'));
 });
 
 // handle the callback from the Fitbit authorization flow
 router.get("/callback", (req, res) => {
 	// exchange the authorization code we just received for an access token
-	client.getAccessToken(req.query.code, 'localhost:3000').then(result => {
+	client.getAccessToken(req.query.code, 'http://localhost/callback').then(result => {
 		// use the access token to fetch the user's profile information
 		client.get("/profile.json", result.access_token).then(results => {
 			res.send(results[0]);
