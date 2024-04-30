@@ -1,24 +1,24 @@
 var express = require('express');
 const User = require('../models/user');
-const fetch = require('node-fetch');
+const axios = require('axios');
 var router = express.Router();
 
 router.post('/addUser', async (req, res, next) => {
     // Destructure req.body
     const {
-        name, accessToken, refreshToken, phoneNumber, familyNumber,
+        name, clientID, phoneNumber, familyNumber,
         bloodSuger, stepCount, recommendStep,
     } = req.body;
 
     try {
-        // Fitbit의 refreshToken을 식별자로 하여 User 생성
-        const exUser = await User.findOne({ refreshToken: refreshToken });
+        // Fitbit의 clientID 식별자로 하여 User 생성
+        const exUser = await User.findOne({ clientID: clientID });
         if (exUser)
             return res.status(409).json({ status: "fail", message: "User Already Exists" });
 
         // Save newUser
         const newUser = new User({
-            name, accessToken, refreshToken, phoneNumber, familyNumber,
+            name, clientID, phoneNumber, familyNumber,
             bloodSuger, stepCount, recommendStep,
         });
         await newUser.save();
@@ -26,15 +26,15 @@ router.post('/addUser', async (req, res, next) => {
         return res.status(201).json({ status: "success", message: "AddUser Success" });
     } catch (error) {
         console.error(error);
-        return next(error);
+        return res.status(400).json(error);
     }
 });
 
 router.put('/putBloodSuger', async (req, res, next) => {
     try {
-        const { refreshToken, value } = req.body;
+        const { clientID, value } = req.body;
 
-        const user = await User.findOne({ refreshToken: refreshToken });
+        const user = await User.findOne({ clientID: clientID });
         if (!user)
             return res.status(404).json({ status: 'fail', message: 'User not found' });
 
@@ -47,15 +47,15 @@ router.put('/putBloodSuger', async (req, res, next) => {
         return res.status(200).json({ status: 'success', message: 'Blood sugar data added successfully' });
     } catch (error) {
         console.error(error);
-        return next(error);
+        return res.status(400).json(error);
     }
 });
 
 router.get('/getStepCount', async (req, res, next) => {
     try {
-        const { accessToken, refreshToken } = req.body;
+        const { accessToken, clientID } = req.body;
 
-        const user = await User.findOne({ refreshToken: refreshToken });
+        const user = await User.findOne({ clientID: clientID });
         if (!user)
             return res.status(404).json({ status: 'fail', message: 'User not found' });
 
@@ -69,14 +69,14 @@ router.get('/getStepCount', async (req, res, next) => {
 
         // 현재 Step 정보 Fitbit에서 Fetch
         const apiEndPoint = `https://api.fitbit.com/1/user/-/activities/date/${formattedDate}.json`;
-        const response = await fetch(apiEndPoint, {
+        const response = await axios.get(apiEndPoint, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
         });
 
         let currentStep = 0;
-        if (response.ok) {
+        if (response.status === 200) {
             const data = await response.json();
             currentStep = data['summary']['steps'];
             console.log(`[user]-[${today}]-[steps]`, data['summary']['steps']);
@@ -105,7 +105,7 @@ router.get('/getStepCount', async (req, res, next) => {
 
         // stepCount 배열에 새로운 걷기량 추가
         user.stepCount.push({ date: new Date(), value: currentStep });
-        //await user.save();
+        await user.save();
 
         return res.status(200).json({
             status: 'success',
@@ -117,7 +117,7 @@ router.get('/getStepCount', async (req, res, next) => {
         });
     } catch (error) {
         console.error(error);
-        return next(error);
+        return res.status(400).json(error);
     }
 });
 

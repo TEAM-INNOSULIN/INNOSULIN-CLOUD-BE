@@ -7,13 +7,8 @@ const userSchema = mongoose.Schema({
         maxlength: 50,
         required: true,
     },
-    // Fitbit AccessToken
-    accessToken: {
-        type: String,
-        required: true,
-    },
-    // Fitbit RefreshToken
-    refreshToken: {
+    // Fitbit ClientID
+    clientID: {
         type: String,
         required: true,
     },

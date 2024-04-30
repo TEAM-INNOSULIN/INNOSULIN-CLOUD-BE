@@ -1,27 +1,54 @@
 var express = require('express');
-const fetch = require('node-fetch');
+const axios = require('axios');
 var router = express.Router();
 
-router.get('/fetchProfile', async (req, res) => {
-	const apiEndPoint = 'https://api.fitbit.com/1/user/-/profile.json';
-	accessToken = req.body.accessToken;
-	try {
-		const response = await fetch(apiEndPoint, {
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-			},
-		});
+router.post('/fetchAccessToken', async (req, res) => {
+	const apiEndPoint = 'https://api.fitbit.com/oauth2/token';
+	const { clientID, clientSecret, refreshToken } = req.body;
 
-		if (response.ok) {
-			const data = await response.json();
-			// console.log("[Fitbit] ", data);
-			return res.status(200).json(data);
+	const base64ClientCredentials = Buffer.from(`${clientID}:${clientSecret}`).toString('base64');
+	const authorizationHeader = `Basic ${base64ClientCredentials}`;
+
+	try {
+		const response = await axios.post(
+			apiEndPoint,
+			`grant_type=refresh_token&client_id=${clientID}&refresh_token=${refreshToken}`,
+			{
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Authorization': authorizationHeader
+				}
+			}
+		);
+
+		if (response.status === 200) {
+			return res.status(200).json(response.data);
 		} else {
 			return res.status(400).json('Fitbit API Request Failed');
 		}
 	} catch (error) {
 		console.error('[Fitbit] ', error);
-		next(error);
+		return res.status(404).json(error);
+	}
+});
+
+router.get('/fetchProfile', async (req, res) => {
+	const apiEndPoint = 'https://api.fitbit.com/1/user/-/profile.json';
+	accessToken = req.body.accessToken;
+	try {
+		const response = await axios.get(apiEndPoint, {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		});
+		if (response.status === 200) {
+			return res.status(200).json(response.data);
+		} else {
+			return res.status(400).json('Fitbit API Request Failed');
+		}
+	} catch (error) {
+		console.error('[Fitbit] ', error);
+		return res.status(404).json(error);
 	}
 });
 
@@ -37,22 +64,20 @@ router.get('/fetchActivity', async (req, res) => {
 	accessToken = req.body.accessToken;
 	const apiEndPoint = `https://api.fitbit.com/1/user/-/activities/date/${formattedDate}.json`;
 	try {
-		const response = await fetch(apiEndPoint, {
+		const response = await axios.get(apiEndPoint, {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 			},
 		});
-
-		if (response.ok) {
-			const data = await response.json();
-			console.log(`[Fitbit]-[${today}]-[steps]`, data['summary']['steps']);
-			return res.status(200).json(data);
+		if (response.status === 200) {
+			console.log(`[Fitbit]-[${today}]-[steps]`, response.data['summary']['steps']);
+			return res.status(200).json(response.data);
 		} else {
 			return res.status(400).json('Fitbit API Request Failed');
 		}
 	} catch (error) {
 		console.error('[Fitbit] ', error);
-		next(error);
+		return res.status(404).json(error);
 	}
 });
 
