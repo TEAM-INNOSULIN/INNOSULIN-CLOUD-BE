@@ -77,7 +77,7 @@ router.get('/getStepCount', async (req, res, next) => {
 
         let currentStep = 0;
         if (response.status === 200) {
-            const data = await response.json();
+            const data = response.data;
             currentStep = data['summary']['steps'];
             console.log(`[user]-[${today}]-[steps]`, data['summary']['steps']);
         } else {
