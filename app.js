@@ -5,6 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const dotenv = require('dotenv');
 var mongoose = require('mongoose');
+const createCronJob = require('./s3Cron');
 dotenv.config();
 
 var app = express();
@@ -29,7 +30,10 @@ const uri = 'mongodb+srv://' +
 mongoose.connect(uri, {
   serverSelectionTimeoutMS: 5000
 }).catch(err => console.log(err.reason))
-  .then(console.log("[Express Server] MongoDB Connected"));
+  .then( () => {
+    console.log("[Express Server] MongoDB Connected");
+    createCronJob();
+  });
 
 // Set Router
 var indexRouter = require('./routes/index');
